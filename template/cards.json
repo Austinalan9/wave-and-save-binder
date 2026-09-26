@@ -1,0 +1,87 @@
+{
+  "phone": "",
+  "pages": [
+    {
+      "game": "pokemon",
+      "set": "Set name here",
+      "label": "Set 1 of 1",
+      "cards": [
+        {
+          "name": "Card name",
+          "type": "fire",
+          "set": "Set name here",
+          "num": "004/180",
+          "cond": "NM",
+          "price": 42.0,
+          "holo": true,
+          "photo": "cards/example-1.jpg"
+        },
+        {
+          "name": "Another card",
+          "type": "water",
+          "set": "Set name here",
+          "num": "031/180",
+          "cond": "LP",
+          "price": 6.25,
+          "holo": false,
+          "photo": "cards/example-2.jpg"
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "game": "palworld",
+      "set": "Palworld set here",
+      "label": "Set 1 of 1",
+      "cards": [
+        {
+          "name": "Pal card",
+          "type": "grass",
+          "set": "Palworld set here",
+          "num": "003/120",
+          "cond": "NM",
+          "price": 8.0,
+          "holo": false,
+          "photo": "cards/example-3.jpg"
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ],
+  "trades": {
+    "have": [
+      {
+        "name": "Card I'd trade",
+        "type": "fire",
+        "set": "Set",
+        "num": "006/180",
+        "cond": "NM",
+        "price": 3.5
+      }
+    ],
+    "want": [
+      {
+        "name": "Card I'm hunting",
+        "type": "gold",
+        "set": "Set",
+        "num": "091/090",
+        "cond": "",
+        "price": 340.0,
+        "holo": true
+      }
+    ]
+  }
+}

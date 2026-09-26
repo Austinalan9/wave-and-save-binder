@@ -1,0 +1,388 @@
+<title>Morty's Binder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root{
+    --leather:#23252A; --leather-2:#2E3037; --leather-edge:#15161A;
+    --tan:#C7A878; --tan-2:#A98A5C; --tan-ink:#3B2E1A;
+    --page:#F3EDE2; --page-2:#E7DFD0; --pocket:#1B1C20;
+    --navy:#1F2B52; --silver:#B8BABF; --ink:#F1EEE8; --ink-2:#B9B4AA; --muted:#7E7A72;
+    --good:#7BC47F; --bad:#E07A6B;
+    color-scheme:dark;
+    --display:"Oswald","Arial Narrow",Impact,sans-serif;
+    --body:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--leather-edge);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--tan);outline-offset:2px}
+
+  /* phone-width stage, centered on wide screens */
+  .stage{height:100%;max-width:430px;margin:0 auto;position:relative;overflow:hidden;background:var(--leather);
+         box-shadow:0 0 0 1px #000 inset}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column}
+  .screen[hidden]{display:none}
+
+  /* ---------- COVER ---------- */
+  .cover{perspective:1500px;background:transparent;z-index:2;pointer-events:none}
+  .cover-book{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:left center;pointer-events:auto;
+      transition:transform 1.15s cubic-bezier(.55,.05,.2,1)}
+  .cover-book.open{transform:rotateY(-178deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:4px 14px 14px 4px;overflow:hidden}
+  .face.front{background:
+      radial-gradient(120% 90% at 30% 20%,#33353C 0%,var(--leather) 55%,#1A1B1F 100%);
+      box-shadow:inset 0 0 0 1px #3A3C43, inset 8px 0 14px -10px #000}
+  .face.front::before{content:"";position:absolute;inset:0;pointer-events:none;
+      background:repeating-linear-gradient(115deg,transparent 0 3px,rgba(255,255,255,.015) 3px 4px)}
+  .face.back{transform:rotateY(180deg);background:linear-gradient(180deg,#E9E0CF,#DCD2BF);
+      box-shadow:inset 0 0 0 1px #C9BEA7}
+  .face.back .lining{position:absolute;left:18px;right:18px;top:18px;bottom:18px;border:1px dashed #B9AB8E;border-radius:6px}
+  .face.back .lining b{position:absolute;left:16px;bottom:14px;font-family:var(--display);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#8C7A57}
+  .face.back .slot{position:absolute;left:18px;right:18px;top:34%;height:52px;background:#CFC3AC;border-radius:4px;box-shadow:inset 0 3px 6px -3px #7f6f52}
+  .spine-strip{position:absolute;left:0;top:0;bottom:0;width:22px;border-radius:4px 0 0 4px;
+      background:linear-gradient(90deg,#17181C,#2A2C32 60%,#202127);box-shadow:inset -1px 0 0 #3A3C43}
+  /* a shadow that sweeps across the page as the cover lifts */
+  .sweep{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,0) 45%);opacity:0;transition:opacity .3s}
+  .cover.opening .sweep{opacity:1;animation:sweep 1.15s cubic-bezier(.55,.05,.2,1) forwards}
+  @keyframes sweep{from{transform:translateX(0)}to{transform:translateX(-110%);opacity:0}}
+  .scuff{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(199,168,120,.55),rgba(199,168,120,0) 70%)}
+  .label{position:absolute;left:50%;top:22%;transform:translateX(-50%);width:76%;padding:18px 16px 16px;text-align:center;
+      background:linear-gradient(180deg,var(--tan),var(--tan-2));color:var(--tan-ink);border-radius:3px;
+      box-shadow:0 2px 0 #7f6742,0 8px 18px -10px #000;font-family:var(--display)}
+  .label .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;opacity:.8}
+  .label h1{margin:6px 0 0;font-size:30px;line-height:1.05;letter-spacing:.03em;font-weight:700;text-wrap:balance}
+  .stats{position:absolute;left:40px;right:26px;top:58%;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{border-top:1px solid rgba(199,168,120,.35);padding-top:8px}
+  .stat b{display:block;font-family:var(--display);font-size:26px;font-weight:500;line-height:1;color:var(--tan);font-variant-numeric:tabular-nums}
+  .stat span{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+  .tap-hint{position:absolute;left:0;right:0;bottom:26px;text-align:center;color:var(--ink-2);font-size:14px;letter-spacing:.06em}
+  .tap-hint .pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--tan);margin-right:8px;vertical-align:middle;
+      animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(199,168,120,.6)}60%{box-shadow:0 0 0 12px rgba(199,168,120,0)}}
+  .cover-tap{position:absolute;inset:0;width:100%;height:100%}
+  .binder .topbar,.binder .tabs{opacity:0;transition:opacity .5s ease .75s}
+  .binder.revealed .topbar,.binder.revealed .tabs{opacity:1}
+
+  /* ---------- BINDER (open) ---------- */
+  .binder{background:var(--leather)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;position:sticky;top:env(safe-area-inset-top,0px)}
+  .topbar h2{margin:0;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.06em;color:var(--tan)}
+  .topbar .sub{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .tabs{display:flex;gap:6px;padding:4px 16px 10px}
+  .tab{flex:1;padding:8px 0;border-radius:999px;font-family:var(--display);font-size:14px;letter-spacing:.1em;text-transform:uppercase;
+      color:var(--ink-2);background:var(--leather-2);border:1px solid #3A3C43}
+  .tab[aria-selected="true"]{background:var(--tan);color:var(--tan-ink);border-color:var(--tan)}
+
+  .book{flex:1;position:relative;perspective:1600px;padding:0 12px 8px;min-height:0}
+  .page{position:absolute;inset:0 12px 8px;display:flex;flex-direction:column;border-radius:4px 10px 10px 4px;
+      background:linear-gradient(180deg,var(--page),var(--page-2));color:var(--tan-ink);
+      box-shadow:0 1px 0 #fff inset, 0 14px 30px -18px #000, 2px 0 0 #d9d0bf, 4px 0 0 #cfc5b2;
+      transform-origin:left center;transition:transform .55s cubic-bezier(.5,.05,.3,1)}
+  .page.turn-out{transform:rotateY(-95deg)}
+  .page.turn-in{transform:rotateY(0)}
+  .page.from-right{transform:rotateY(60deg);transform-origin:right center}
+  .rings{position:absolute;left:-6px;top:0;bottom:0;width:14px;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none}
+  .ring{width:14px;height:14px;border-radius:50%;border:4px solid var(--silver);background:var(--leather);box-shadow:0 1px 2px #000}
+  .page-head{display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px 6px 22px}
+  .page-head .set{font-family:var(--display);font-size:18px;letter-spacing:.04em;font-weight:700}
+  .page-head .set small{display:block;font-family:var(--body);font-weight:400;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7A6A4E}
+  .page-head .num{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7A6A4E;font-variant-numeric:tabular-nums}
+  .grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:auto;align-content:center;gap:8px;padding:6px 14px 14px 22px;min-height:0}
+  .pocket{position:relative;aspect-ratio:63/88;max-width:100%;border-radius:5px;background:var(--pocket);box-shadow:inset 0 2px 6px #000, inset 0 0 0 1px #2c2d33;overflow:hidden;min-height:0}
+  @media (max-height:640px){.grid{padding:4px 34px 10px 40px}}
+  .pocket:empty::after{content:"empty";position:absolute;inset:0;display:grid;place-items:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#4A4B52}
+  .card{position:absolute;inset:4px;border-radius:4px;overflow:hidden;text-align:left;display:flex;flex-direction:column;
+      background:var(--c1);box-shadow:0 2px 6px -2px #000;transition:transform .15s ease}
+  .card:active{transform:scale(.97)}
+  .card .art{flex:1;margin:5px 5px 0;border-radius:3px;background:
+      radial-gradient(circle at 30% 35%,var(--c2) 0 18%,transparent 19%),
+      radial-gradient(circle at 70% 60%,var(--c3) 0 26%,transparent 27%),
+      linear-gradient(160deg,var(--c2),var(--c1));position:relative;overflow:hidden}
+  .card .art::after{content:attr(data-glyph);position:absolute;right:4px;bottom:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1;color:rgba(255,255,255,.18)}
+  .card .name{font-family:var(--display);font-size:11px;letter-spacing:.03em;padding:4px 6px 5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .art.photo{background-size:cover!important;background-position:center}
+  .art.photo::after{content:none!important}
+  .card.holo::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 40%,rgba(255,255,255,.35) 48%,transparent 56%,transparent 100%);
+      animation:holo 3.5s linear infinite;pointer-events:none;mix-blend-mode:screen}
+  @keyframes holo{to{transform:rotate(360deg)}}
+  .pager{display:flex;justify-content:space-between;align-items:center;padding:6px 16px 10px;color:var(--ink-2);font-size:13px}
+  .pager button{font-family:var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--tan);padding:8px 10px}
+  .pager button:disabled{color:#55575E}
+  .dots{display:flex;gap:5px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:#4A4C53}
+  .dots i.on{background:var(--tan)}
+
+  /* ---------- TRADES ---------- */
+  .trades{flex:1;overflow:auto;padding:4px 16px 16px}
+  .trades h3{font-family:var(--display);font-weight:500;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);margin:14px 0 8px}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #34363D}
+  .swatch{width:34px;height:46px;border-radius:3px;background:linear-gradient(160deg,var(--c2),var(--c1));flex:none}
+  .row .t{flex:1;min-width:0}
+  .row .t b{display:block;font-weight:600}
+  .row .t span{font-size:13px;color:var(--ink-2)}
+  .row .p{font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+  .chip{font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid}
+  .chip.have{color:var(--good);border-color:var(--good)}
+  .chip.want{color:var(--tan);border-color:var(--tan)}
+  .contact{margin-top:18px;padding:14px;border-radius:10px;background:var(--leather-2);border:1px solid #3A3C43}
+  .contact b{font-family:var(--display);font-size:18px;letter-spacing:.04em}
+  .contact .num{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-variant-numeric:tabular-nums;font-size:18px}
+  .contact .num button{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tan);padding:6px 10px;border:1px solid var(--tan);border-radius:999px}
+
+  /* ---------- DETAIL SHEET ---------- */
+  .sheet{position:absolute;inset:0;background:rgba(10,10,12,.72);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+  .sheet.on{opacity:1;pointer-events:auto}
+  .sheet-body{width:100%;background:var(--leather-2);border-radius:18px 18px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));
+      transform:translateY(30px);transition:transform .3s cubic-bezier(.2,.8,.2,1);border-top:1px solid #3A3C43}
+  .sheet.on .sheet-body{transform:none}
+  .grab{width:38px;height:4px;border-radius:2px;background:#4A4C53;margin:0 auto 12px}
+  .big{width:170px;height:238px;margin:0 auto 14px;border-radius:9px;position:relative;overflow:hidden;background:var(--c1);
+      box-shadow:0 18px 30px -14px #000;transform-style:preserve-3d;transition:transform .12s ease-out;touch-action:none}
+  .big .art{position:absolute;inset:10px 10px 46px;border-radius:5px;background:
+      radial-gradient(circle at 30% 35%,var(--c2) 0 18%,transparent 19%),
+      radial-gradient(circle at 70% 60%,var(--c3) 0 26%,transparent 27%),
+      linear-gradient(160deg,var(--c2),var(--c1))}
+  .big .art::after{content:attr(data-glyph);position:absolute;right:10px;bottom:0;font-family:var(--display);font-weight:700;font-size:96px;line-height:1;color:rgba(255,255,255,.16)}
+  .big .name{position:absolute;left:10px;right:10px;bottom:10px;font-family:var(--display);font-size:18px;color:#fff;letter-spacing:.03em}
+  .big.holo::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 40%,rgba(255,255,255,.4) 48%,transparent 56%,transparent 100%);animation:holo 3.5s linear infinite;mix-blend-mode:screen}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+  .meta div{border-top:1px solid #3A3C43;padding-top:6px}
+  .meta span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .meta b{font-family:var(--display);font-weight:500;font-size:20px;font-variant-numeric:tabular-nums}
+  .meta b.price{color:var(--tan)}
+  .close{position:absolute;right:14px;top:12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);padding:6px 8px}
+  .tilt-hint{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+
+  .note{position:absolute;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom,0px));text-align:center;font-size:11px;color:var(--muted);letter-spacing:.04em;pointer-events:none}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="stage" id="stage">
+
+  <!-- COVER -->
+  <section class="screen cover" id="cover">
+    <div class="sweep"></div>
+    <div class="cover-book" id="coverBook">
+      <div class="face front">
+        <div class="spine-strip"></div>
+        <div class="scuff" style="left:34px;top:22px;width:46px;height:40px"></div>
+        <div class="scuff" style="right:18px;bottom:74px;width:38px;height:30px"></div>
+        <div class="label">
+          <div class="kicker">The collection of</div>
+          <h1>MORTY&rsquo;S BINDER</h1>
+        </div>
+        <div class="stats" id="coverStats"></div>
+        <div class="tap-hint"><span class="pulse"></span>Tap to open</div>
+        <button class="cover-tap" id="openBtn" aria-label="Open the binder"></button>
+      </div>
+      <div class="face back"><div class="lining"><b>Handle with care</b></div><div class="slot"></div></div>
+    </div>
+  </section>
+
+  <!-- OPEN BINDER -->
+  <section class="screen binder" id="binder" hidden>
+    <div class="topbar">
+      <h2>MORTY&rsquo;S BINDER</h2>
+      <div class="sub" id="pageCount"></div>
+    </div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="pokemon" aria-selected="true">Pokémon</button>
+      <button class="tab" role="tab" data-tab="palworld" aria-selected="false">Palworld</button>
+      <button class="tab" role="tab" data-tab="trades" aria-selected="false">Trades</button>
+    </div>
+
+    <div class="book" id="book">
+      <div class="rings"><i class="ring"></i><i class="ring"></i><i class="ring"></i></div>
+      <article class="page" id="page"></article>
+    </div>
+    <div class="pager" id="pager">
+      <button id="prevBtn">‹ Prev</button>
+      <div class="dots" id="dots"></div>
+      <button id="nextBtn">Next ›</button>
+    </div>
+
+    <div class="trades" id="trades" hidden></div>
+  </section>
+
+  <!-- CARD DETAIL -->
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet-body">
+      <div class="grab"></div>
+      <button class="close" id="closeBtn">Close</button>
+      <div class="big" id="big"><div class="art"></div><div class="name"></div></div>
+      <div class="meta" id="meta"></div>
+      <div class="tilt-hint">Drag across the card to tilt it</div>
+    </div>
+  </div>
+
+  <div class="note" id="note">Example cards and prices, for the mockup</div>
+</div>
+
+<script>
+(function(){
+  // ---- example data (fictional cards; prices are placeholders) ----
+  var palettes = {
+    fire:  ["#8E2E1F","#E2673A","#F5B84C"], water:["#1E4E8C","#3E8DD6","#A6DDF4"], grass:["#2E6B3A","#63B26A","#D6E8A0"],
+    dark:  ["#2A2432","#5A4E70","#B39ACF"], gold:["#6E5A1F","#C99E36","#F5E3A0"], stone:["#4A4A50","#8A8A93","#D6D6DC"],
+    lightning:["#7D6B12","#E4C633","#FFF3A6"], psychic:["#6A2C6E","#B85BBE","#F3C4F5"]
+  };
+  function card(name, type, set, num, cond, price, holo){ return {name:name,type:type,set:set,num:num,cond:cond,price:price,holo:!!holo}; }
+  var pages = [
+    {game:"pokemon", set:"Ember Ridge", label:"Set 1 of 3", cards:[
+      card("Cindervole","fire","Ember Ridge","004/180","NM",42.00,true), card("Ashpup","fire","Ember Ridge","006/180","NM",3.50),
+      card("Marshfin","water","Ember Ridge","031/180","LP",6.25), card("Tidewhorl","water","Ember Ridge","033/180","NM",18.00,true),
+      card("Fernkit","grass","Ember Ridge","052/180","NM",2.10), card("Bramblehorn","grass","Ember Ridge","055/180","NM",11.40),
+      card("Voltmoth","lightning","Ember Ridge","078/180","NM",7.80), card("Duskraven","dark","Ember Ridge","101/180","MP",4.90), null ]},
+    {game:"pokemon", set:"Tidal Hollow", label:"Set 2 of 3", cards:[
+      card("Reefling","water","Tidal Hollow","012/165","NM",5.00), card("Abyssoar","water","Tidal Hollow","015/165","NM",64.00,true),
+      card("Kelpine","grass","Tidal Hollow","040/165","NM",1.75), card("Glimmoth","psychic","Tidal Hollow","071/165","NM",22.50,true),
+      card("Sootfang","fire","Tidal Hollow","088/165","LP",9.10), card("Boulderox","stone","Tidal Hollow","104/165","NM",3.30),
+      card("Nightgale","dark","Tidal Hollow","120/165","NM",15.00), card("Gildrake","gold","Tidal Hollow","160/165","NM",128.00,true),
+      card("Sparkit","lightning","Tidal Hollow","079/165","NM",2.40) ]},
+    {game:"pokemon", set:"Crown Vault", label:"Set 3 of 3", cards:[
+      card("Regalion","gold","Crown Vault","001/090","NM",210.00,true), card("Aurorix","psychic","Crown Vault","014/090","NM",38.00,true),
+      card("Pyreclaw","fire","Crown Vault","022/090","NM",12.00), null, card("Stonehide","stone","Crown Vault","047/090","NM",4.00),
+      null, null, null, null ]},
+    {game:"palworld", set:"Frontier Pals", label:"Set 1 of 2", cards:[
+      card("Lumberpaw","grass","Frontier Pals","003/120","NM",8.00), card("Emberkin","fire","Frontier Pals","011/120","NM",26.00,true),
+      card("Driftshell","water","Frontier Pals","019/120","NM",3.20), card("Ironmaw","stone","Frontier Pals","030/120","NM",14.50),
+      card("Voltfluff","lightning","Frontier Pals","041/120","LP",5.60), card("Nocturne","dark","Frontier Pals","058/120","NM",47.00,true),
+      card("Mossback","grass","Frontier Pals","064/120","NM",2.00), card("Sunwing","gold","Frontier Pals","099/120","NM",71.00,true),
+      card("Puddlepal","water","Frontier Pals","020/120","NM",1.50) ]},
+    {game:"palworld", set:"Deep Reach", label:"Set 2 of 2", cards:[
+      card("Glowtide","water","Deep Reach","007/110","NM",9.90), card("Cinderhoof","fire","Deep Reach","021/110","NM",31.00,true),
+      null, card("Mindwisp","psychic","Deep Reach","044/110","NM",17.25), null, null, null, null, null ]}
+  ];
+  var trades = {
+    have:[ card("Ashpup","fire","Ember Ridge","006/180","NM",3.50), card("Sootfang","fire","Tidal Hollow","088/165","LP",9.10), card("Voltfluff","lightning","Frontier Pals","041/120","LP",5.60) ],
+    want:[ card("Abyssoar (alt art)","water","Tidal Hollow","166/165","",95.00,true), card("Regalion (gold)","gold","Crown Vault","091/090","",340.00,true), card("Sunwing (full art)","gold","Frontier Pals","121/120","",110.00,true) ]
+  };
+
+  // ---- data source: cards.json next to this file (GitHub Pages); falls back to the samples above ----
+  var sample = {pages:pages, trades:trades, phone:"(512) 555-0147"};
+  var phone = sample.phone;
+  function boot(data){
+    if(data && data.pages){ pages = data.pages; trades = data.trades || {have:[],want:[]}; phone = data.phone || ""; }
+    init();
+  }
+  try {
+    fetch("cards.json", {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).then(boot, function(){ boot(null); });
+  } catch(e){ boot(null); }
+  function init(){
+  // ---- stats ----
+  var all = [].concat.apply([], pages.map(function(p){return p.cards.filter(Boolean);}));
+  var sets = {}; pages.forEach(function(p){sets[p.set]=1;});
+  var holos = all.filter(function(c){return c.holo;}).length;
+  function money(n){ return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  // no totals anywhere on purpose: a stranger who taps the card shouldn't see what the binder is worth
+  document.getElementById("coverStats").innerHTML =
+    '<div class="stat"><b>'+all.length+'</b><span>cards</span></div>'+
+    '<div class="stat"><b>'+Object.keys(sets).length+'</b><span>sets</span></div>'+
+    '<div class="stat"><b>'+holos+'</b><span>holos</span></div>';
+  document.getElementById("pageCount").textContent = pages.length+" pages";
+  document.getElementById("note").hidden = !(pages === sample.pages);
+
+  // ---- state ----
+  var tab = "pokemon", idx = 0;
+  var cover = document.getElementById("cover"), coverBook = document.getElementById("coverBook"), binder = document.getElementById("binder");
+  var pageEl = document.getElementById("page"), book = document.getElementById("book"), pager = document.getElementById("pager"), tradesEl = document.getElementById("trades");
+
+  document.getElementById("openBtn").addEventListener("click", function(){
+    binder.hidden = false; render();                 // the first page is already there when the cover lifts
+    requestAnimationFrame(function(){
+      cover.classList.add("opening"); coverBook.classList.add("open");
+      binder.classList.add("revealed");
+    });
+    setTimeout(function(){ cover.hidden = true; }, 1250);
+  });
+
+  function tabPages(){ return pages.filter(function(p){return p.game===tab;}); }
+  function cardHTML(c, i){
+    if(!c) return '<div class="pocket"></div>';
+    var p = palettes[c.type];
+    var art = c.photo ? '<div class="art photo" style="background-image:url(\''+c.photo+'\')"></div>' : '<div class="art" data-glyph="'+c.name.charAt(0)+'"></div>';
+    return '<div class="pocket"><button class="card'+(c.holo?' holo':'')+'" data-i="'+i+'" style="--c1:'+p[0]+';--c2:'+p[1]+';--c3:'+p[2]+'" aria-label="'+c.name+'">'+
+      art+'<div class="name">'+c.name+'</div></button></div>';
+  }
+  function render(dir){
+    var list = tabPages(), pg = list[idx];
+    var html = '<div class="page-head"><div class="set">'+pg.set+'<small>'+pg.label+'</small></div><div class="num">Page '+(idx+1)+' / '+list.length+'</div></div>'+
+      '<div class="grid">'+pg.cards.map(cardHTML).join("")+'</div>';
+    if(dir){
+      pageEl.classList.add(dir>0 ? "turn-out" : "from-right");
+      setTimeout(function(){ pageEl.innerHTML = html; pageEl.classList.remove("turn-out","from-right"); }, 280);
+    } else { pageEl.innerHTML = html; }
+    document.getElementById("dots").innerHTML = list.map(function(_,i){return '<i class="'+(i===idx?'on':'')+'"></i>';}).join("");
+    document.getElementById("prevBtn").disabled = idx===0;
+    document.getElementById("nextBtn").disabled = idx===list.length-1;
+  }
+  function go(d){ var n = idx+d, list = tabPages(); if(n<0||n>=list.length) return; idx = n; render(d); }
+  document.getElementById("prevBtn").addEventListener("click", function(){go(-1);});
+  document.getElementById("nextBtn").addEventListener("click", function(){go(1);});
+
+  // swipe to turn
+  var sx=null, sy=null;
+  book.addEventListener("touchstart", function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+  book.addEventListener("touchend", function(e){
+    if(sx===null) return; var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; sx=null;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) go(dx<0?1:-1);
+  });
+
+  // tabs
+  document.getElementById("tabs").addEventListener("click", function(e){
+    var b = e.target.closest(".tab"); if(!b) return;
+    tab = b.dataset.tab; idx = 0;
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){ t.setAttribute("aria-selected", t===b ? "true":"false"); });
+    var isTrades = tab==="trades";
+    book.hidden = isTrades; pager.hidden = isTrades; tradesEl.hidden = !isTrades;
+    if(isTrades) renderTrades(); else render();
+  });
+
+  function tradeRow(c, kind){
+    var p = palettes[c.type];
+    return '<div class="row"><div class="swatch" style="--c1:'+p[0]+';--c2:'+p[1]+'"></div><div class="t"><b>'+c.name+'</b><span>'+c.set+' · '+c.num+(c.cond?' · '+c.cond:'')+'</span></div>'+
+      '<span class="chip '+kind+'">'+kind+'</span><div class="p">'+money(c.price)+'</div></div>';
+  }
+  function renderTrades(){
+    tradesEl.innerHTML = '<h3>Up for trade</h3>'+trades.have.map(function(c){return tradeRow(c,"have");}).join("")+
+      '<h3>Looking for</h3>'+trades.want.map(function(c){return tradeRow(c,"want");}).join("")+
+      (phone ? '<div class="contact"><b>Got one of these? Text Morty.</b><div class="num"><span id="phone">'+phone+'</span><button id="copyBtn">Copy</button></div></div>' : "");
+    if(!phone) return;
+    document.getElementById("copyBtn").addEventListener("click", function(){
+      var t = document.getElementById("phone").textContent, b = this;
+      function done(){ b.textContent="Copied"; setTimeout(function(){b.textContent="Copy";},1400); }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, function(){ selectPhone(); }); } else { selectPhone(); }
+    });
+  }
+  function selectPhone(){ var r=document.createRange(); r.selectNodeContents(document.getElementById("phone")); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+  // ---- detail sheet ----
+  var sheet = document.getElementById("sheet"), big = document.getElementById("big"), meta = document.getElementById("meta");
+  pageEl.addEventListener("click", function(e){
+    var b = e.target.closest(".card"); if(!b) return;
+    var c = tabPages()[idx].cards[+b.dataset.i]; if(!c) return;
+    var p = palettes[c.type];
+    big.style.cssText = "--c1:"+p[0]+";--c2:"+p[1]+";--c3:"+p[2];
+    big.className = "big"+(c.holo?" holo":"");
+    var ba = big.querySelector(".art");
+    ba.setAttribute("data-glyph", c.photo ? "" : c.name.charAt(0));
+    ba.classList.toggle("photo", !!c.photo); ba.style.backgroundImage = c.photo ? "url('"+c.photo+"')" : "";
+    big.querySelector(".name").textContent = c.name;
+    meta.innerHTML = '<div><span>Set</span><b>'+c.set+'</b></div><div><span>Number</span><b>'+c.num+'</b></div>'+
+      '<div><span>Condition</span><b>'+c.cond+'</b></div><div><span>Market</span><b class="price">'+money(c.price)+'</b></div>';
+    sheet.classList.add("on"); sheet.setAttribute("aria-hidden","false");
+  });
+  function closeSheet(){ sheet.classList.remove("on"); sheet.setAttribute("aria-hidden","true"); big.style.transform=""; }
+  document.getElementById("closeBtn").addEventListener("click", closeSheet);
+  sheet.addEventListener("click", function(e){ if(e.target===sheet) closeSheet(); });
+
+  // drag-to-tilt on the big card (works with mouse and touch, no device permissions needed)
+  function tilt(x,y){
+    var r = big.getBoundingClientRect(), px=(x-r.left)/r.width-.5, py=(y-r.top)/r.height-.5;
+    big.style.transform = "rotateY("+(px*28)+"deg) rotateX("+(-py*28)+"deg)";
+  }
+  big.addEventListener("pointermove", function(e){ if(e.pressure>0 || e.pointerType==="mouse") tilt(e.clientX,e.clientY); });
+  big.addEventListener("pointerleave", function(){ big.style.transform=""; });
+  big.addEventListener("pointerup", function(){ big.style.transform=""; });
+  } // init
+})();
+</script>
